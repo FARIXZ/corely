@@ -9,6 +9,9 @@ Corely is a lightweight, local-network web dashboard for executing system bash c
 - **Widgets System & iFrames**: Fully responsive endpoints (`/cpu`, `/memory`, `/actions`) built specifically to be embedded as iFrames inside external dashboards like **Homarr** or **Homepage**.
 - **Granular Customization**: Pick colors globally or customize specific widget overlays.
 
+## Preview
+![Corely Dashboard Preview](preview.png)
+
 ## Installation (Linux)
 You can deploy Corely on any standard Linux terminal that has Node.js installed. Download or clone this repository, open the folder in your terminal, and run:
 ```bash
