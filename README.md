@@ -19,9 +19,13 @@ sudo bash install.sh
 ```
 
 ### CLI Commands
-Once installed, use the following commands anywhere:
-- `corely start`: Boots the web server in the background.
+Once installed, Corely runs seamlessly in the background as a `systemd` service and will automatically boot when your server restarts. 
+You can use the following commands anywhere:
+- `corely start`: Starts the service.
 - `corely stop`: Halts the service.
+- `corely restart`: Restarts the service.
+- `corely enable`: Turns ON automatic start on server reboot.
+- `corely disable`: Turns OFF automatic start on server reboot.
 - `corely reset`: Deletes auth logic, allowing a fresh Admin creation.
 - `corely uninstall`: Permanently removes the service from your system.
 
