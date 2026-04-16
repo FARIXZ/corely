@@ -299,6 +299,43 @@
         background: var(--surface); color: var(--brand); border-color: var(--brand);
       }
       
+      .settings-group {
+        background: rgba(0,0,0,0.2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 24px;
+      }
+      .settings-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .settings-item:last-child {
+        border-bottom: none;
+      }
+      .settings-item label {
+        margin-bottom: 0;
+        color: var(--text);
+        text-transform: none;
+        letter-spacing: normal;
+        font-size: 15px;
+        font-weight: 500;
+      }
+      .settings-item select, .settings-item input[type="color"] {
+        width: auto;
+        min-width: 140px;
+        padding: 8px 12px;
+        margin: 0;
+      }
+      .settings-item input[type="color"] {
+        height: 38px;
+        padding: 2px;
+        border-radius: 6px;
+      }
+      
     </style>
   </head>
   <body>
@@ -374,33 +411,42 @@
           <div class="card">
              <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">System Configuration</h2>
              
-             <div class="form-group">
-               <label>Dashboard Accent Color</label>
-               <input type="color" id="accentColor" value="#a266ff" />
+             <div class="settings-group">
+               <div class="settings-item">
+                 <label>Action Dashboard Layout</label>
+                 <select id="viewMode">
+                   <option value="grid">Grid View</option>
+                   <option value="list">List View</option>
+                 </select>
+               </div>
+               <div class="settings-item">
+                 <label>Dashboard Accent Color</label>
+                 <input type="color" id="accentColor" value="#a266ff" />
+               </div>
              </div>
              
-             <hr style="border:0; border-top: 1px solid var(--border); margin: 24px 0;">
-             
-             <div class="form-group">
-               <label>Widget Color Mapping</label>
-               <select id="widgetColorMode">
-                 <option value="dynamic">Dynamic Hue (Classic)</option>
-                 <option value="specific">Specific Color Overlay</option>
-               </select>
+             <h2 style="font-size: 15px; font-weight: 600; margin-top: 10px; margin-bottom: 12px; color: var(--text-muted)">IFrame Monitors</h2>
+             <div class="settings-group">
+               <div class="settings-item">
+                 <label>Widget Color Mapping</label>
+                 <select id="widgetColorMode">
+                   <option value="dynamic">Dynamic Hue (Classic)</option>
+                   <option value="specific">Specific Color Overlay</option>
+                 </select>
+               </div>
+               <div class="settings-item" id="widgetAccentGroup" style="display:none; border-top: 1px solid var(--border);">
+                 <label>Widget Accent Color</label>
+                 <input type="color" id="widgetAccentColor" value="#a266ff" />
+               </div>
              </div>
              
-             <div class="form-group" id="widgetAccentGroup" style="display:none;">
-               <label>Widget Accent Color</label>
-               <input type="color" id="widgetAccentColor" value="#a266ff" />
-             </div>
-             
-             <button id="saveSettingsBtn" class="btn" style="margin-top: 24px; margin-bottom: 30px;">
+             <button id="saveSettingsBtn" class="btn" style="margin-top: 10px; margin-bottom: 30px;">
                 <i data-feather="save" style="width: 18px; height: 18px"></i>
                 Apply Settings
              </button>
              
              <div class="form-group" style="padding: 16px; border: 1px solid rgba(255,107,107,0.3); border-radius: 8px; background: rgba(255,107,107,0.05);">
-                <label style="color: #ff6b6b; margin-bottom: 12px;">Danger Zone</label>
+                <label style="color: #ff6b6b; margin-bottom: 12px; text-transform: uppercase;">Danger Zone</label>
                 <button id="uninstallBtn" class="btn" style="background: transparent; border: 1px solid #ff6b6b; color: #ff6b6b;">
                   Uninstall Corely
                 </button>
@@ -499,6 +545,7 @@
       };
 
       // Settings
+      const viewMode = document.getElementById('viewMode');
       const accentColor = document.getElementById('accentColor');
       const widgetColorMode = document.getElementById('widgetColorMode');
       const widgetAccentColor = document.getElementById('widgetAccentColor');
@@ -513,6 +560,9 @@
            const res = await fetch('/api/settings');
            const data = await res.json();
            
+           if (data.viewMode) {
+             viewMode.value = data.viewMode;
+           }
            if (data.accentColor) {
              accentColor.value = data.accentColor;
              applyAccentColor(data.accentColor);
@@ -538,6 +588,7 @@
 
       document.getElementById('saveSettingsBtn').onclick = async () => {
          const settings = {
+            viewMode: viewMode.value,
             accentColor: accentColor.value,
             widgetColorMode: widgetColorMode.value,
             widgetAccentColor: widgetAccentColor.value
