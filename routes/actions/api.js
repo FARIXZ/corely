@@ -2,6 +2,8 @@ import express from "express";
 import fs from "fs/promises";
 import path from "path";
 import { execFile, exec } from "child_process";
+import crypto from "crypto";
+import os from "os";
 
 const router = express.Router();
 const DATA_FILE = path.join(process.cwd(), "data", "actions.json");
@@ -54,7 +56,7 @@ class CommandManager {
    * @returns {Promise<{ success: boolean, stdout?: string, stderr?: string, error?: string }>}
    */
   execute(actionId, command) {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       // ── Concurrency gate ──
       if (this._runningProcesses.size >= this.maxConcurrent) {
         return resolve({
@@ -63,16 +65,29 @@ class CommandManager {
         });
       }
 
+      // ── Create temp script ──
+      const scriptId = crypto.randomBytes(8).toString("hex");
+      const scriptPath = path.join(os.tmpdir(), `corely_${scriptId}.sh`);
+      try {
+        await fs.writeFile(scriptPath, command, { mode: 0o700 });
+      } catch (e) {
+        return resolve({ success: false, error: "Failed to write temp script." });
+      }
+
       // ── Stamp the execution time ──
       this._lastExecTime.set(actionId, Date.now());
 
       // ── Spawn the process ──
-      const child = exec(command, {
+      const child = exec(`bash ${scriptPath}`, {
         timeout: this.processTimeoutMs,
         maxBuffer: this.maxBuffer,
-        windowsHide: true,       // Don't flash console windows on Windows
-        killSignal: "SIGTERM",   // Graceful kill on timeout
+        windowsHide: true,
+        killSignal: "SIGTERM",
       }, (error, stdout, stderr) => {
+        
+        // Cleanup script
+        fs.unlink(scriptPath).catch(() => {});
+
         // Process finished — remove from tracking set
         this._runningProcesses.delete(child);
 
@@ -280,6 +295,53 @@ router.delete("/api/actions/:id", async (req, res) => {
   } catch (err) {
     console.error("Error deleting action:", err);
     res.status(500).json({ error: "Failed to delete action." });
+  }
+});
+
+// POST trigger uninstall
+router.post("/api/actions/uninstall", async (req, res) => {
+  try {
+    res.json({ success: true, message: "Uninstalling corely..." });
+    
+    // Give express 2 seconds to flush the response, then execute rm -rf on the CWD and exit.
+    setTimeout(() => {
+       const dir = process.cwd();
+       exec(`rm -rf "${dir}"`, (error) => {
+          process.exit(0);
+       });
+    }, 2000);
+  } catch(e) {
+    res.status(500).json({ error: "Uninstall failed" });
+  }
+});
+
+// PUT reorder actions
+router.put("/api/actions/reorder", async (req, res) => {
+  try {
+    const { order } = req.body; // Array of IDs
+    if (!Array.isArray(order)) return res.status(400).json({ error: "order must be an array of IDs" });
+
+    const actions = await getActions();
+    const newActions = [];
+    
+    // Add existing items matching the new order
+    order.forEach(id => {
+      const match = actions.find(a => a.id === id);
+      if (match) newActions.push(match);
+    });
+
+    // Bring over any that might have been concurrently added/missed in the UI map
+    actions.forEach(a => {
+      if (!newActions.find(na => na.id === a.id)) {
+        newActions.push(a);
+      }
+    });
+
+    await fs.writeFile(DATA_FILE, JSON.stringify(newActions, null, 2), "utf-8");
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error reordering actions:", err);
+    res.status(500).json({ error: "Failed to reorder actions." });
   }
 });
 

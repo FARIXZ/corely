@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" style="color-scheme: dark">
+<head>
+  <meta charset="UTF-8">
+  <title>Corely Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="/feather.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d0d12;
+      --surface: rgba(255, 255, 255, 0.05);
+      --border: rgba(255, 255, 255, 0.1);
+      --brand: hsl(270, 100%, 65%);
+      --text: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.6);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body {
+      background-color: var(--bg); color: var(--text); min-height: 100vh;
+      display: flex; justify-content: center; align-items: center; padding: 20px;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+      padding: 32px; width: 100%; max-width: 400px;
+      backdrop-filter: blur(12px); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    }
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; text-align: center; }
+    p { color: var(--text-muted); font-size: 14px; text-align: center; margin-bottom: 24px; }
+    .form-group { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+    label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+    input { width: 100%; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border);
+      color: var(--text); padding: 12px 16px; border-radius: 8px; font-size: 15px; }
+    input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px hsla(270, 100%, 65%, 0.2); }
+    .btn { background: var(--brand); color: #fff; border: none; padding: 14px;
+      border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; }
+    .btn:hover { background: hsl(270, 100%, 70%); }
+    .error { color: #ff6b6b; font-size: 13px; text-align: center; margin-bottom: 16px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div style="display:flex; justify-content:center; color: var(--brand); margin-bottom: 16px;">
+        <i data-feather="lock" style="width: 48px; height: 48px;"></i>
+    </div>
+    <h1>Welcome Back</h1>
+    <p>Sign in to manage your system</p>
+    <div id="error" class="error"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" class="btn">Sign In</button>
+    </form>
+  </div>
+  <script>
+    feather.replace();
+    document.getElementById('loginForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const u = document.getElementById('username').value;
+      const p = document.getElementById('password').value;
+      const err = document.getElementById('error');
+      
+      const res = await fetch('/api/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p })
+      });
+      if(res.ok) {
+        window.location.href = '/';
+      } else {
+        const data = await res.json();
+        err.innerText = data.error || 'Failed to login';
+        err.style.display = 'block';
+      }
+    };
+  </script>
+</body>
+</html>

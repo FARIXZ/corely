@@ -1,5 +1,19 @@
 {
+  "name": "corely",
+  "version": "1.0.0",
+  "description": "Corely is a lightweight, local-network web dashboard for executing system bash commands and monitoring hardware.",
+  "main": "server.js",
   "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FARIXZ/corely.git"
+  },
+  "author": "FARIXZ",
+  "license": "MIT",
   "dependencies": {
     "express": "^5.2.1"
   }

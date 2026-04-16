@@ -23,9 +23,9 @@ router.get("/actions", (req, res) => {
         * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
         body {
           margin: 0; background: none; font-family: 'JetBrains Mono', monospace;
-          display: flex; justify-content: center; align-items:flex-start; /* changed to start to let actions stack */
-          height: 100vh; width: 100vw; overflow-x: hidden; overflow-y: auto;
-          padding: 20px 0;
+          display: flex; justify-content: center; align-items:flex-start;
+          height: 100vh; overflow-x: hidden; overflow-y: auto;
+          box-sizing: border-box; padding: 16px;
         }
         /* Scrollbar styling */
         ::-webkit-scrollbar { width: 6px; }
@@ -34,7 +34,6 @@ router.get("/actions", (req, res) => {
         
         .container { 
           width: 100%; 
-          padding: 0 12px; 
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
           gap: 10px; 

@@ -149,6 +149,16 @@ router.get("/temp", (req, res) => {
       text-shadow: 0 0 8px var(--brand-glow);
       transition: color 0.5s, text-shadow 0.5s;
     }
+  
+    @media (max-width: 250px), (max-height: 250px) {
+      body { padding: 12px; }
+      .container { gap: 8px; }
+      .icon-wrapper { width: 32px; height: 32px; border-radius: 8px; }
+      svg { width: 16px; height: 16px; }
+      .stats-grid { padding-top: 8px; gap: 8px; }
+      .stat-value { font-size: 12px; }
+      .cpu-val, .val-main, .uptime-val { font-size: 24px !important; }
+    }
   </style>
 </head>
 <body>
@@ -199,7 +209,38 @@ router.get("/temp", (req, res) => {
     </div>
   </div>
 
-  <script>
+  
+    <script>
+      let mode = 'dynamic';
+      let accent = '#a266ff';
+
+      async function fetchSettings() {
+        try {
+          const res = await fetch('/api/settings');
+          const data = await res.json();
+          if (data.widgetColorMode) mode = data.widgetColorMode;
+          if (data.widgetAccentColor) accent = data.widgetAccentColor;
+        } catch(e) {}
+      }
+
+      function applySpecificColor() {
+         if (mode === 'specific') {
+            document.documentElement.style.setProperty('--brand', accent);
+            document.documentElement.style.setProperty('--brand-bg', accent + '26');
+            document.documentElement.style.setProperty('--brand-glow', accent + '80');
+            return true;
+         }
+         return false;
+      }
+      
+      fetchSettings().then(() => {
+         if(applySpecificColor() && typeof updateColors !== 'undefined') {
+            // Overwrite original colors if specific mode is loaded immediately
+            applySpecificColor();
+         }
+      });
+      
+    
     const MAX_TEMP = 100;
 
     function updateColors(temp) {

@@ -2,11 +2,12 @@
 <html lang="en" style="color-scheme: dark">
   <head>
     <meta charset="UTF-8" />
-    <title>Corely Actions Manager</title>
+    <title>Corely Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script src="/feather.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
       :root {
         --bg: #0d0d12;
@@ -51,6 +52,7 @@
       .header {
         text-align: center;
         margin-bottom: 10px;
+        position: relative;
       }
 
       .header h1 {
@@ -92,7 +94,8 @@
       }
 
       input,
-      select {
+      select,
+      textarea {
         width: 100%;
         background: rgba(0, 0, 0, 0.2);
         border: 1px solid var(--border);
@@ -104,13 +107,25 @@
           border-color 0.2s,
           box-shadow 0.2s;
       }
+      
+      textarea {
+        resize: vertical;
+        font-family: monospace;
+      }
 
       select {
         appearance: none;
       }
+      
+      input[type="color"] {
+        padding: 4px;
+        height: 48px;
+        cursor: pointer;
+      }
 
       input:focus,
-      select:focus {
+      select:focus,
+      textarea:focus {
         outline: none;
         border-color: var(--brand);
         box-shadow: 0 0 0 3px hsla(270, 100%, 65%, 0.2);
@@ -188,12 +203,18 @@
         background: rgba(0, 0, 0, 0.2);
         border: 1px solid var(--border);
         border-radius: 8px;
+        cursor: grab;
+      }
+      
+      .action-item:active {
+        cursor: grabbing;
       }
 
       .action-info {
         display: flex;
         align-items: center;
         gap: 16px;
+        pointer-events: none;
       }
 
       .action-info .icon {
@@ -219,6 +240,10 @@
         font-size: 12px;
         font-family: monospace;
         margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 300px;
       }
 
       .badge {
@@ -263,79 +288,168 @@
         background: var(--surface-hover);
       }
       
-      /* Datalist styling hack fallback */
-      datalist {
-        display: none;
+      .section-toggle {
+        display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;
       }
+      .section-toggle button {
+        background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+        padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: 0.2s; font-weight: 500;
+      }
+      .section-toggle button.active {
+        background: var(--surface); color: var(--brand); border-color: var(--brand);
+      }
+      
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="header" style="position: relative;">
-        <h1>Corely Actions</h1>
-        <p>Create and manage system execution shortcuts</p>
-        <div style="position: absolute; top: 0; right: 0; display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);">
-           <div style="display: flex; gap: 8px; align-items: center; border-right: 1px solid var(--border); padding-right: 12px;">
-             <i data-feather="list" id="viewList" style="width:16px; height: 16px; cursor:pointer; color: var(--brand); transition: 0.2s;" title="List View"></i>
-             <i data-feather="grid" id="viewGrid" style="width:16px; height: 16px; cursor:pointer; color: var(--text-muted); transition: 0.2s;" title="Grid View"></i>
-           </div>
-           
-           <div style="display: flex; align-items: center; gap: 6px;" title="Accent Color">
-             <label for="accentPicker" style="cursor: pointer; display: flex; align-items: center;">
-               <i data-feather="droplet" style="width:16px; height: 16px; color: var(--text-muted);"></i>
-             </label>
-             <input type="color" id="accentPicker" value="#a266ff" style="width: 24px; height: 24px; padding: 0; border: none; border-radius: 4px; cursor: pointer; background: transparent;">
-           </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <form id="createForm">
-          <div class="form-group">
-            <label>Action Name</label>
-            <input type="text" id="actionName" placeholder="e.g. Screen On" required autocomplete="off" />
-          </div>
-
-          <div class="form-group">
-            <label>Icon Identifier</label>
-            <div class="icon-selector" style="position: relative;">
-              <div class="icon-preview" id="iconPreview">
-                <!-- preview injected here -->
-              </div>
-              <input
-                type="text"
-                id="actionIcon"
-                placeholder="Type to search Lucide icons..."
-                value=""
-                required
-                autocomplete="off"
-              />
-              <div class="autocomplete-dropdown" id="iconDropdown"></div>
-            </div>
-            <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px">Supports all Lucide Icons. Must have internet for preview.</small>
-          </div>
-
-          <div class="form-group">
-            <label>System Command</label>
-            <input type="text" id="actionCommand" placeholder="e.g. /usr/sbin/vbetool dpms on" required autocomplete="off" />
-          </div>
-
-          <button type="submit" class="btn">
-            <i data-feather="plus" style="width: 18px; height: 18px"></i>
-            Create Action
+      <div class="header">
+        <h1>Corely Dashboard</h1>
+        <p>System Controller & Dashboards</p>
+        <div style="position: absolute; top: 0; right: 0;">
+          <button id="logoutBtn" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer;" title="Logout">
+             <i data-feather="log-out"></i>
           </button>
-        </form>
+        </div>
+      </div>
+      
+      <div class="section-toggle">
+         <button id="tabActions" class="active">Actions</button>
+         <button id="tabSettings">Settings</button>
+         <button id="tabLinks">Paths</button>
       </div>
 
-      <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px">
-          <h2 style="font-size: 18px; font-weight: 600">Active Actions</h2>
-          <span class="badge" id="actionCount">0</span>
-        </div>
-        <div class="actions-list" id="actionsList">
-          <!-- Actions rendered here -->
-        </div>
+      <div id="viewActions">
+          <div class="card" style="margin-bottom: 30px;">
+            <form id="createForm">
+              <div class="form-group">
+                <label>Action Name</label>
+                <input type="text" id="actionName" placeholder="e.g. Turn off services" required autocomplete="off" />
+              </div>
+
+              <div class="form-group">
+                <label>Icon Identifier</label>
+                <div class="icon-selector" style="position: relative;">
+                  <div class="icon-preview" id="iconPreview">
+                    <!-- preview injected here -->
+                  </div>
+                  <input
+                    type="text"
+                    id="actionIcon"
+                    placeholder="Type to search Lucide icons..."
+                    value=""
+                    required
+                    autocomplete="off"
+                  />
+                  <div class="autocomplete-dropdown" id="iconDropdown"></div>
+                </div>
+                <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px">Supports all Lucide Icons. Must have internet for preview.</small>
+              </div>
+
+              <div class="form-group">
+                <label>System Command (Multilne Bash Script)</label>
+                <textarea id="actionCommand" rows="4" placeholder="#!/bin/bash&#10;systemctl stop service&#10;echo done" required autocomplete="off"></textarea>
+              </div>
+
+              <button type="submit" class="btn">
+                <i data-feather="plus" style="width: 18px; height: 18px"></i>
+                Create Action
+              </button>
+            </form>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px">
+              <h2 style="font-size: 18px; font-weight: 600">Active Actions</h2>
+              <span class="badge" id="actionCount">0</span>
+            </div>
+            <div class="actions-list" id="actionsList">
+              <!-- Actions rendered here -->
+            </div>
+            <small style="display:block; text-align:center; color: var(--text-muted); font-size: 11px; margin-top: 16px;">Drag commands to sort</small>
+          </div>
       </div>
+      
+      <div id="viewSettings" style="display:none;">
+          <div class="card">
+             <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">System Configuration</h2>
+             
+             <div class="form-group">
+               <label>Dashboard Accent Color</label>
+               <input type="color" id="accentColor" value="#a266ff" />
+             </div>
+             
+             <hr style="border:0; border-top: 1px solid var(--border); margin: 24px 0;">
+             
+             <div class="form-group">
+               <label>Widget Color Mapping</label>
+               <select id="widgetColorMode">
+                 <option value="dynamic">Dynamic Hue (Classic)</option>
+                 <option value="specific">Specific Color Overlay</option>
+               </select>
+             </div>
+             
+             <div class="form-group" id="widgetAccentGroup" style="display:none;">
+               <label>Widget Accent Color</label>
+               <input type="color" id="widgetAccentColor" value="#a266ff" />
+             </div>
+             
+             <button id="saveSettingsBtn" class="btn" style="margin-top: 24px; margin-bottom: 30px;">
+                <i data-feather="save" style="width: 18px; height: 18px"></i>
+                Apply Settings
+             </button>
+             
+             <div class="form-group" style="padding: 16px; border: 1px solid rgba(255,107,107,0.3); border-radius: 8px; background: rgba(255,107,107,0.05);">
+                <label style="color: #ff6b6b; margin-bottom: 12px;">Danger Zone</label>
+                <button id="uninstallBtn" class="btn" style="background: transparent; border: 1px solid #ff6b6b; color: #ff6b6b;">
+                  Uninstall Corely
+                </button>
+             </div>
+          </div>
+      </div>
+
+      <div id="viewLinks" style="display:none;">
+          <div class="card">
+             <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">Available Paths</h2>
+             <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Use these paths to integrate widgets into external dashboards like Homarr or Homepage.</p>
+             
+             <div class="actions-list">
+               <div class="action-item" style="cursor: default;">
+                 <str style="font-size: 15px;">/actions</str>
+                 <sm style="color: var(--text-muted); font-size: 13px;">Action Grid</sm>
+               </div>
+               <div class="action-item" style="cursor: default;">
+                 <str style="font-size: 15px;">/uptime</str>
+                 <sm style="color: var(--text-muted); font-size: 13px;">System Uptime</sm>
+               </div>
+               <div class="action-item" style="cursor: default;">
+                 <str style="font-size: 15px;">/cpu</str>
+                 <sm style="color: var(--text-muted); font-size: 13px;">CPU Load %</sm>
+               </div>
+               <div class="action-item" style="cursor: default;">
+                 <str style="font-size: 15px;">/memory</str>
+                 <sm style="color: var(--text-muted); font-size: 13px;">RAM Usage</sm>
+               </div>
+               <div class="action-item" style="cursor: default;">
+                 <str style="font-size: 15px;">/temp</str>
+                 <sm style="color: var(--text-muted); font-size: 13px;">CPU Temperature</sm>
+               </div>
+               <div class="action-item" style="cursor: default;">
+                 <str style="font-size: 15px;">/hdd</str>
+                 <sm style="color: var(--text-muted); font-size: 13px;">HDD Storage</sm>
+               </div>
+               <div class="action-item" style="cursor: default;">
+                 <str style="font-size: 15px;">/ssd</str>
+                 <sm style="color: var(--text-muted); font-size: 13px;">SSD Storage</sm>
+               </div>
+               <div class="action-item" style="cursor: default;">
+                 <str style="font-size: 15px;">/network</str>
+                 <sm style="color: var(--text-muted); font-size: 13px;">Network TX/RX</sm>
+               </div>
+             </div>
+          </div>
+      </div>
+      
     </div>
 
     <script>
@@ -349,47 +463,66 @@
       const iconPreview = document.getElementById('iconPreview');
       const actionsList = document.getElementById('actionsList');
       const actionCount = document.getElementById('actionCount');
-      const accentPicker = document.getElementById('accentPicker');
-      const viewListBtn = document.getElementById('viewList');
-      const viewGridBtn = document.getElementById('viewGrid');
       
-      let currentViewMode = 'list';
-
-      function applyViewMode(mode) {
-         currentViewMode = mode;
-         if (mode === 'grid') {
-            viewGridBtn.style.color = 'var(--brand)';
-            viewListBtn.style.color = 'var(--text-muted)';
-         } else {
-            viewListBtn.style.color = 'var(--brand)';
-            viewGridBtn.style.color = 'var(--text-muted)';
+      const tabActions = document.getElementById('tabActions');
+      const tabSettings = document.getElementById('tabSettings');
+      const tabLinks = document.getElementById('tabLinks');
+      const viewActions = document.getElementById('viewActions');
+      const viewSettings = document.getElementById('viewSettings');
+      const viewLinks = document.getElementById('viewLinks');
+      
+      // Tabs
+      tabActions.onclick = () => { 
+         tabActions.className='active'; tabSettings.className=''; tabLinks.className=''; 
+         viewActions.style.display='block'; viewSettings.style.display='none'; viewLinks.style.display='none'; 
+      };
+      tabSettings.onclick = () => { 
+         tabSettings.className='active'; tabActions.className=''; tabLinks.className=''; 
+         viewSettings.style.display='block'; viewActions.style.display='none'; viewLinks.style.display='none'; 
+      };
+      tabLinks.onclick = () => { 
+         tabLinks.className='active'; tabActions.className=''; tabSettings.className=''; 
+         viewLinks.style.display='block'; viewActions.style.display='none'; viewSettings.style.display='none'; 
+      };
+      
+      document.getElementById('logoutBtn').onclick = async () => {
+         await fetch('/api/auth/logout', { method: 'POST' });
+         window.location.reload();
+      };
+      
+      document.getElementById('uninstallBtn').onclick = async () => {
+         if(confirm("Are you sure you want to completely remove Corely from the system?")) {
+            // Uninstalls the directory
+            await fetch('/api/actions/uninstall', { method: 'POST' });
+            alert("Uninstall trigger activated. Link will die shortly.");
          }
-      }
+      };
 
-      async function saveSetting(key, value) {
-         try {
-           await fetch('/api/settings', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ [key]: value })
-           });
-         } catch(err) { console.error(err); }
-      }
+      // Settings
+      const accentColor = document.getElementById('accentColor');
+      const widgetColorMode = document.getElementById('widgetColorMode');
+      const widgetAccentColor = document.getElementById('widgetAccentColor');
+      const widgetAccentGroup = document.getElementById('widgetAccentGroup');
+      
+      widgetColorMode.onchange = () => {
+         widgetAccentGroup.style.display = widgetColorMode.value === 'specific' ? 'flex' : 'none';
+      };
 
-      viewListBtn.addEventListener('click', () => { applyViewMode('list'); saveSetting('viewMode', 'list'); });
-      viewGridBtn.addEventListener('click', () => { applyViewMode('grid'); saveSetting('viewMode', 'grid'); });
-
-      // Setup dynamic Settings UI
       async function setupSettings() {
          try {
            const res = await fetch('/api/settings');
            const data = await res.json();
+           
            if (data.accentColor) {
-             accentPicker.value = data.accentColor;
+             accentColor.value = data.accentColor;
              applyAccentColor(data.accentColor);
            }
-           if (data.viewMode) {
-             applyViewMode(data.viewMode);
+           if (data.widgetColorMode) {
+             widgetColorMode.value = data.widgetColorMode;
+             widgetColorMode.onchange();
+           }
+           if (data.widgetAccentColor) {
+             widgetAccentColor.value = data.widgetAccentColor;
            }
          } catch(e) {}
       }
@@ -403,20 +536,28 @@
          `;
       }
 
-      accentPicker.addEventListener('change', (e) => {
-         const hex = e.target.value;
-         applyAccentColor(hex);
-         saveSetting('accentColor', hex);
-      });
+      document.getElementById('saveSettingsBtn').onclick = async () => {
+         const settings = {
+            accentColor: accentColor.value,
+            widgetColorMode: widgetColorMode.value,
+            widgetAccentColor: widgetAccentColor.value
+         };
+         applyAccentColor(settings.accentColor);
+         await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+         });
+         alert("Settings saved successfully!");
+      };
       
       setupSettings();
 
+      // Icons autocomplete logic
       let currentIconSvg = '';
-      let fetchTimeout;
       let allIcons = [];
       const dropdown = document.getElementById('iconDropdown');
 
-      // Fetch the library registry on load (via same-origin backend proxy to beat CORS)
       fetch('/api/icons/meta')
         .then(res => res.json())
         .then(data => {
@@ -429,11 +570,8 @@
       iconInput.addEventListener('focus', handleSearch);
       iconInput.addEventListener('input', handleSearch);
       
-      // hide dropdown when clicking outside
       document.addEventListener('click', (e) => {
-        if (!e.target.closest('.icon-selector')) {
-           dropdown.style.display = 'none';
-        }
+        if (!e.target.closest('.icon-selector')) dropdown.style.display = 'none';
       });
       
       let searchTimeout;
@@ -446,9 +584,7 @@
         }
 
         searchTimeout = setTimeout(() => {
-          // Limit to 20 to prevent DOM/network overload
           const matches = allIcons.filter(name => name.includes(val)).slice(0, 20);
-          
           if (matches.length === 0) {
              dropdown.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;">No icons found</div>';
              dropdown.style.display = 'flex';
@@ -475,7 +611,6 @@
                   }
                });
           });
-          
           dropdown.style.display = 'flex';
         }, 150);
       }
@@ -483,7 +618,6 @@
       async function selectIcon(name) {
          iconInput.value = name;
          dropdown.style.display = 'none';
-         
          iconPreview.innerHTML = '<i data-feather="clock"></i>';
          try { feather.replace(); } catch(e) {}
          
@@ -506,7 +640,7 @@
          } catch(e) {}
       }
 
-      // Initial fetch of actions
+      // Actions logic and Sortable.js
       async function loadActions() {
         try {
           const res = await fetch('/api/actions');
@@ -529,24 +663,22 @@
         actions.forEach(action => {
           const item = document.createElement('div');
           item.className = 'action-item';
+          item.dataset.id = action.id;
 
           item.innerHTML = `
             <div class="action-info">
-              <div class="icon" id="list-icon-${action.id}">
-                <!-- Icon loads offline via backend -->
-              </div>
+              <div class="icon" id="list-icon-${action.id}"></div>
               <div class="action-details">
                 <str>${action.name}</str>
                 <sm>${action.command}</sm>
               </div>
             </div>
-            <button class="btn btn-danger" onclick="deleteAction('${action.id}')" title="Delete">
+            <button class="btn btn-danger" onclick="deleteAction('${action.id}')" title="Delete" style="pointer-events: auto;">
               <i data-feather="trash-2" style="width: 18px; height: 18px;"></i>
             </button>
           `;
           actionsList.appendChild(item);
 
-          // Fetch offline icon safely
           fetch(`/cached-icons/${action.icon}.svg`)
              .then(r => r.text())
              .then(svg => {
@@ -566,10 +698,26 @@
         feather.replace();
       }
 
-      // Submit handler
+      // Initialize Sortable
+      new Sortable(actionsList, {
+         animation: 150,
+         onEnd: async function () {
+            const items = [...actionsList.children];
+            const order = items.map(el => el.dataset.id);
+            if(order.length === 0) return;
+            
+            try {
+               await fetch('/api/actions/reorder', {
+                  method: 'PUT',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({ order })
+               });
+            } catch(e) { console.error("Reorder failed", e); }
+         }
+      });
+
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-
         if (!currentIconSvg) {
           alert("Please enter a valid Lucide icon name and wait for the preview to load.");
           return;
@@ -600,30 +748,19 @@
             alert(err.error || 'Failed to create action');
           }
         } catch (error) {
-          console.error(error);
           alert('Exception creating action');
         }
       });
 
-      // Delete handler
       window.deleteAction = async (id) => {
         if (!confirm('Are you sure you want to delete this action?')) return;
         try {
           const res = await fetch(`/api/actions/${id}`, { method: 'DELETE' });
-          if (res.ok) {
-            loadActions();
-          } else {
-            alert('Failed to delete action');
-          }
-        } catch (err) {
-          console.error(err);
-        }
+          if (res.ok) loadActions();
+        } catch (err) {}
       };
 
-      // Load on start
       loadActions();
-
-      // Trigger preview for initial value
       iconInput.dispatchEvent(new Event('input'));
     </script>
   </body>

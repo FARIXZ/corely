@@ -159,6 +159,16 @@ router.get("/ssd", (req, res) => {
       color: #22c55e;
       text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
     }
+  
+    @media (max-width: 250px), (max-height: 250px) {
+      body { padding: 12px; }
+      .container { gap: 8px; }
+      .icon-wrapper { width: 32px; height: 32px; border-radius: 8px; }
+      svg { width: 16px; height: 16px; }
+      .stats-grid { padding-top: 8px; gap: 8px; }
+      .stat-value { font-size: 12px; }
+      .cpu-val, .val-main, .uptime-val { font-size: 24px !important; }
+    }
   </style>
 </head>
 <body>
