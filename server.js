@@ -1,5 +1,6 @@
 import express from "express";
 import os from "os";
+import path from "path";
 
 import authApiRoute, { requireAuth } from "./routes/auth/api.js";
 import memoryRoute from "./routes/widgets/memory.js";
@@ -20,6 +21,7 @@ app.use("/", authApiRoute);
 app.use(requireAuth);
 
 app.use(express.static("public"));
+app.use("/cached-icons", express.static(path.join(process.cwd(), "data", "cached-icons")));
 
 app.use("/", actionsApiRoute);
 app.use("/", actionsIframeRoute);

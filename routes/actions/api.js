@@ -256,7 +256,7 @@ router.post("/api/actions", async (req, res) => {
     // Save SVG for offline usage
     // Sanitize icon name to prevent path traversal
     const safeName = icon.replace(/[^a-z0-9\-]/gi, "_");
-    const iconPath = path.join(process.cwd(), "public", "cached-icons", `${safeName}.svg`);
+    const iconPath = path.join(process.cwd(), "data", "cached-icons", `${safeName}.svg`);
     await fs.mkdir(path.dirname(iconPath), { recursive: true });
     await fs.writeFile(iconPath, iconSvg, "utf-8");
 

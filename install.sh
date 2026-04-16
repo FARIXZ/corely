@@ -13,17 +13,17 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-DEST="/opt/corely"
+DEST="$(pwd)"
 
 # 2. Check permissions
 if [ "$EUID" -ne 0 ]; then
-    echo "⚠️  Please run this script with sudo to install globally in /opt and /usr/local/bin."
+    echo "⚠️  Please run this script with sudo to install globally in /usr/local/bin."
     echo "Example: sudo bash install.sh"
     exit 1
 fi
 
 # 3. Setup
-echo "=> Installing Corely to $DEST..."
+echo "=> Setting up Corely in $DEST..."
 
 # Stop service if it's already running from a previous install
 if systemctl is-active --quiet corely; then
@@ -31,26 +31,7 @@ if systemctl is-active --quiet corely; then
     systemctl stop corely
 fi
 
-# Backup existing data to prevent wipe on update
-if [ -d "$DEST/data" ]; then
-    echo "=> Preserving existing data and settings..."
-    cp -r "$DEST/data" /tmp/corely_data_backup
-fi
-
-rm -rf "$DEST"
-mkdir -p "$DEST"
-
-# Copy all files from the current directory to DEST
-cp -r . "$DEST/"
-
-# Restore backed-up data
-if [ -d "/tmp/corely_data_backup" ]; then
-    rm -rf "$DEST/data"
-    mv /tmp/corely_data_backup "$DEST/data"
-fi
-
 echo "=> Installing dependencies..."
-cd "$DEST" || exit
 npm install
 
 # 4. Create the systemd service
@@ -79,12 +60,12 @@ systemctl start corely
 # 5. Create the global CLI tool
 echo "=> Installing CLI wrapper..."
 
-cat << 'EOF' > /usr/local/bin/corely
+cat << EOF_CLI > /usr/local/bin/corely
 #!/bin/bash
-DIR="/opt/corely"
-cd "$DIR" || exit
+DIR="$DEST"
+cd "\$DIR" || exit
 
-case "$1" in
+case "\$1" in
     start)
         echo "Starting Corely via systemd..."
         systemctl start corely
@@ -94,6 +75,9 @@ case "$1" in
         echo "Stopping Corely..."
         systemctl stop corely
         echo "Corely stopped."
+        ;;
+    status)
+        systemctl status corely
         ;;
     restart)
         echo "Restarting Corely..."
@@ -111,8 +95,8 @@ case "$1" in
         ;;
     reset)
         echo "Resetting Corely Authentication..."
-        rm -f "$DIR/data/auth.json"
-        rm -f "$DIR/data/sessions.json"
+        rm -f "\$DIR/data/auth.json"
+        rm -f "\$DIR/data/sessions.json"
         echo "Authentication reset. Navigate to the web UI to setup a new admin account."
         ;;
     uninstall)
@@ -121,16 +105,24 @@ case "$1" in
         systemctl disable corely
         rm -f /etc/systemd/system/corely.service
         systemctl daemon-reload
-        rm -rf "$DIR"
         rm -f /usr/local/bin/corely
-        echo "Corely has been removed from your system."
+        echo "Corely system services have been removed."
+        
+        read -p "Do you also want to permanently delete the Corely application folder (and all your data) at \$DIR? [y/N]: " confirm
+        if [[ "\$confirm" =~ ^[Yy]$ ]]; then
+            rm -rf "\$DIR"
+            echo "Directory deleted."
+        else
+            echo "Directory preserved. You can delete it manually later."
+        fi
+        echo "Uninstall complete."
         ;;
     *)
         echo "Corely CLI"
-        echo "Usage: corely {start|stop|restart|enable|disable|reset|uninstall}"
+        echo "Usage: corely {start|stop|restart|status|enable|disable|reset|uninstall}"
         ;;
 esac
-EOF
+EOF_CLI
 
 chmod +x /usr/local/bin/corely
 

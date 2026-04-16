@@ -23,6 +23,7 @@ Once installed, Corely runs seamlessly in the background as a `systemd` service 
 You can use the following commands anywhere:
 - `corely start`: Starts the service.
 - `corely stop`: Halts the service.
+- `corely status`: Shows if the service is running running and if auto-startup is enabled.
 - `corely restart`: Restarts the service.
 - `corely enable`: Turns ON automatic start on server reboot.
 - `corely disable`: Turns OFF automatic start on server reboot.
